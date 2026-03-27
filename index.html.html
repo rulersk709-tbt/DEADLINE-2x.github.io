@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>DEADLINE | Multi-Tournament Arena - Live Score Display</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 20% 30%, #0a0c12, #030507);
+      color: #eef5ff;
+      line-height: 1.45;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.96);
+      backdrop-filter: blur(14px);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .login-modal {
+      background: linear-gradient(145deg, #111e26, #081016);
+      border-radius: 36px;
+      padding: 2rem 1.8rem;
+      max-width: 400px;
+      width: 90%;
+      border: 1.5px solid #0ff;
+      box-shadow: 0 0 32px rgba(0, 255, 255, 0.2);
+      text-align: center;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .deadline-title {
+      font-size: 4rem;
+      font-weight: 900;
+      letter-spacing: 8px;
+      background: linear-gradient(135deg, #00ffff, #ffaa44, #ff66aa, #00ffaa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-transform: uppercase;
+      animation: titleGlow 3s ease-in-out infinite;
+      text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+      position: relative;
+      display: inline-block;
+    }
+
+    @keyframes titleGlow {
+      0%, 100% {
+        filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.3));
+        letter-spacing: 8px;
+      }
+      50% {
+        filter: drop-shadow(0 0 25px rgba(0, 255, 255, 0.8)) drop-shadow(0 0 10px rgba(255, 170, 68, 0.6));
+        letter-spacing: 10px;
+      }
+    }
+
+    .deadline-title::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120%;
+      height: 120%;
+      background: radial-gradient(circle, rgba(0, 255, 255, 0.2), transparent);
+      filter: blur(20px);
+      z-index: -1;
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.8); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .tagline {
+      color: #b8e2ff;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-top: 0.5rem;
+      opacity: 0.8;
+    }
+
+    .live-score-section {
+      background: linear-gradient(135deg, #0a0f1a, #05080f);
+      border-radius: 28px;
+      margin-bottom: 1.8rem;
+      overflow: hidden;
+      border: 1px solid rgba(100, 150, 255, 0.5);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .live-score-header {
+      background: linear-gradient(135deg, #1a2a3a, #0f1a2a);
+      padding: 0.8rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .live-score-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      100% { left: 100%; }
+    }
+
+    .live-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .live-pulse {
+      width: 14px;
+      height: 14px;
+      background: #ff4d4d;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+      box-shadow: 0 0 10px #ff4d4d;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.2); background: #ff9999; }
+    }
+
+    .live-title h3 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: white;
+      text-shadow: 0 0 10px rgba(0,0,0,0.5);
+      letter-spacing: 2px;
+    }
+
+    .live-badge {
+      background: rgba(0,0,0,0.5);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #ffaa66;
+    }
+
+    .live-score-display {
+      background: linear-gradient(135deg, #0f172a, #080c1a);
+      padding: 1.2rem;
+      border-bottom: 2px solid #2a4a6a;
+    }
+
+    .live-score-container {
+      background: rgba(0,0,0,0.5);
+      border-radius: 20px;
+      padding: 1rem;
+      min-height: 300px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .live-score-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .score-message {
+      padding: 12px 15px;
+      border-radius: 12px;
+      animation: slideIn 0.3s ease;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .score-message:hover {
+      transform: translateX(5px);
+    }
+
+    .score-message.light-blue {
+      background: linear-gradient(95deg, rgba(100, 180, 255, 0.2), rgba(70, 150, 230, 0.1));
+      border-left: 4px solid #64b4ff;
+      box-shadow: 0 2px 8px rgba(100, 180, 255, 0.2);
+    }
+
+    .score-message.light-blue:hover {
+      background: linear-gradient(95deg, rgba(100, 180, 255, 0.3), rgba(70, 150, 230, 0.2));
+      box-shadow: 0 4px 12px rgba(100, 180, 255, 0.3);
+    }
+
+    .score-message.yellow {
+      background: linear-gradient(95deg, rgba(255, 200, 100, 0.2), rgba(255, 180, 70, 0.1));
+      border-left: 4px solid #ffcc66;
+      box-shadow: 0 2px 8px rgba(255, 200, 100, 0.2);
+    }
+
+    .score-message.yellow:hover {
+      background: linear-gradient(95deg, rgba(255, 200, 100, 0.3), rgba(255, 180, 70, 0.2));
+      box-shadow: 0 4px 12px rgba(255, 200, 100, 0.3);
+    }
+
+    .score-message.green {
+      background: linear-gradient(95deg, rgba(100, 255, 120, 0.2), rgba(70, 230, 90, 0.1));
+      border-left: 4px solid #66ff88;
+      box-shadow: 0 2px 8px rgba(100, 255, 120, 0.2);
+    }
+
+    .score-message.green:hover {
+      background: linear-gradient(95deg, rgba(100, 255, 120, 0.3), rgba(70, 230, 90, 0.2));
+      box-shadow: 0 4px 12px rgba(100, 255, 120, 0.3);
+    }
+
+    .score-message.light-pink {
+      background: linear-gradient(95deg, rgba(255, 120, 160, 0.2), rgba(230, 90, 140, 0.1));
+      border-left: 4px solid #ff88aa;
+      box-shadow: 0 2px 8px rgba(255, 120, 160, 0.2);
+    }
+
+    .score-message.light-pink:hover {
+      background: linear-gradient(95deg, rgba(255, 120, 160, 0.3), rgba(230, 90, 140, 0.2));
+      box-shadow: 0 4px 12px rgba(255, 120, 160, 0.3);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .score-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .score-team {
+      font-weight: 800;
+      font-size: 1rem;
+    }
+
+    .light-blue .score-team { color: #88ccff; }
+    .yellow .score-team { color: #ffdd88; }
+    .green .score-team { color: #88ffaa; }
+    .light-pink .score-team { color: #ffaacc; }
+
+    .score-time {
+      font-size: 0.7rem;
+      color: #88aacc;
+      font-family: monospace;
+    }
+
+    .score-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin: 5px 0;
+    }
+
+    .light-blue .score-value { color: #64b4ff; }
+    .yellow .score-value { color: #ffcc66; }
+    .green .score-value { color: #66ff88; }
+    .light-pink .score-value { color: #ff88aa; }
+
+    .score-details {
+      font-size: 0.85rem;
+      margin-top: 5px;
+      padding-top: 5px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.2);
+      color: #cceeff;
+    }
+
+    .score-admin-control {
+      background: linear-gradient(135deg, #1a1f2e, #0f1422);
+      padding: 1rem;
+      border-top: 1px solid #2a4a6a;
+    }
+
+    .score-input-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .score-input-group input, .score-input-group select {
+      flex: 1;
+      min-width: 120px;
+      background: #0f1c22;
+      border: 1px solid #2a4a6a;
+      margin: 0;
+    }
+
+    .post-score-btn {
+      background: linear-gradient(95deg, #2a6a8a, #1a4a6a);
+      width: auto;
+      padding: 10px 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .post-score-btn:hover {
+      transform: scale(1.02);
+      background: linear-gradient(95deg, #3a7a9a, #2a5a7a);
+    }
+
+    .clear-live-btn {
+      background: linear-gradient(95deg, #4a3a2a, #3a2a1a);
+      width: auto;
+    }
+
+    .empty-score {
+      text-align: center;
+      color: #88aacc;
+      padding: 2rem;
+      font-style: italic;
+    }
+
+    .tournaments-container {
+      margin-bottom: 2rem;
+    }
+
+    .tournaments-scroll {
+      overflow-x: auto;
+      overflow-y: visible;
+      padding: 0.5rem 0 1rem 0;
+      scroll-behavior: smooth;
+    }
+
+    .tournaments-row {
+      display: flex;
+      gap: 1.2rem;
+      padding: 0.5rem 0.2rem;
+      min-width: min-content;
+    }
+
+    .tournament-card {
+      background: linear-gradient(135deg, rgba(20, 40, 55, 0.95), rgba(8, 20, 30, 0.95));
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      padding: 1rem 1.2rem;
+      min-width: 220px;
+      max-width: 260px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      position: relative;
+    }
+
+    .tournament-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #0ff, #f0f, #ff0);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .tournament-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .tournament-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(0, 255, 255, 0.2);
+    }
+
+    .tournament-card.active {
+      background: linear-gradient(135deg, rgba(0, 150, 200, 0.25), rgba(0, 100, 150, 0.25));
+      border: 2px solid #0ff;
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+    }
+
+    .tournament-card[data-format="1v1"] {
+      background: linear-gradient(135deg, rgba(30, 40, 70, 0.95), rgba(15, 25, 45, 0.95));
+    }
+
+    .tournament-card[data-format="4v4"] {
+      background: linear-gradient(135deg, rgba(70, 30, 50, 0.95), rgba(45, 20, 35, 0.95));
+    }
+
+    .tournament-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+    }
+
+    .tournament-badge {
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .tournament-badge[data-format="1v1"] {
+      background: linear-gradient(95deg, #00a6c4, #0080aa);
+    }
+
+    .tournament-badge[data-format="4v4"] {
+      background: linear-gradient(95deg, #c03c5c, #a02248);
+    }
+
+    .tournament-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    .tournament-stats {
+      display: flex;
+      gap: 0.8rem;
+      margin-bottom: 0.8rem;
+      font-size: 0.7rem;
+      color: #aaccff;
+    }
+
+    .tournament-delete-btn {
+      background: rgba(255, 50, 50, 0.8);
+      border: none;
+      width: auto;
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      margin: 0;
+      border-radius: 12px;
+    }
+
+    .tournament-admin-controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+      padding: 0.8rem;
+      background: rgba(0, 20, 30, 0.6);
+      border-radius: 20px;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .create-tournament-admin-btn {
+      background: linear-gradient(95deg, #2ecc71, #27ae60);
+      width: auto;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .delete-tournament-admin-btn {
+      background: linear-gradient(95deg, #e74c3c, #c0392b);
+      width: auto;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .delete-tournament-admin-btn:hover {
+      transform: scale(0.98);
+      background: linear-gradient(95deg, #c0392b, #a93226);
+    }
+
+    .admin-only-badge {
+      background: #ffaa44;
+      color: #000;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      margin-left: auto;
+    }
+
+    .room-info-panel {
+      background: linear-gradient(135deg, #0a1f2a, #041016);
+      border-radius: 28px;
+      padding: 1rem 1.4rem;
+      margin: 1rem 0 1.8rem 0;
+      border: 1px solid #ffbb44;
+      display: none;
+    }
+
+    .room-info-panel.active {
+      display: block;
+      animation: gentleGlow 1.8s infinite;
+    }
+
+    @keyframes gentleGlow {
+      0%, 100% { box-shadow: 0 0 5px #ffbb44; }
+      50% { box-shadow: 0 0 18px #ffaa33; }
+    }
+
+    .room-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 0.8rem;
+    }
+
+    .room-card {
+      background: #0a161c;
+      padding: 0.7rem 1rem;
+      border-radius: 20px;
+      flex: 1;
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .slot-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      background: rgba(0, 20, 30, 0.7);
+      backdrop-filter: blur(8px);
+      padding: 0.7rem 1.5rem;
+      border-radius: 50px;
+      margin: 1rem 0 1.8rem;
+      border: 1px solid cyan;
+    }
+
+    .counter {
+      font-size: 1.2rem;
+      font-weight: bold;
+      background: #0a1a1f;
+      padding: 0.2rem 1rem;
+      border-radius: 40px;
+    }
+
+    .counter span {
+      color: #0ff;
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .dashboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.6rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .register-card {
+      flex: 1.2;
+      min-width: 280px;
+      background: rgba(12, 20, 28, 0.85);
+      backdrop-filter: blur(4px);
+      border-radius: 28px;
+      padding: 1.4rem;
+      border: 1px solid rgba(0, 255, 255, 0.4);
+    }
+
+    .admin-section {
+      flex: 1;
+      min-width: 320px;
+      background: rgba(12, 20, 28, 0.85);
+      backdrop-filter: blur(4px);
+      border-radius: 28px;
+      padding: 1.4rem;
+      border: 1px solid rgba(255, 80, 120, 0.6);
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid #0ff;
+      padding-left: 0.8rem;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 14px;
+      margin: 6px 0 12px 0;
+      background: #0f1c22;
+      border: 1px solid #2f5568;
+      border-radius: 28px;
+      color: white;
+    }
+
+    button {
+      background: linear-gradient(95deg, #0099bb, #007799);
+      border: none;
+      padding: 10px 18px;
+      border-radius: 36px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 6px;
+      transition: transform 0.1s ease;
+    }
+
+    button:hover {
+      transform: scale(0.98);
+    }
+
+    .admin-btn {
+      background: linear-gradient(95deg, #c03c5c, #a02248);
+    }
+
+    .phase-btn {
+      background: linear-gradient(95deg, #6a4e9e, #4a3680);
+    }
+
+    .players-section {
+      margin-top: 2rem;
+    }
+
+    .teams-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(12, 20, 28, 0.7);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .teams-table th {
+      background: linear-gradient(135deg, #1a2a3a, #0f1a22);
+      padding: 12px;
+      text-align: left;
+      color: #ffcc66;
+      border-bottom: 2px solid #0ff;
+    }
+
+    .teams-table td {
+      padding: 12px;
+      border-bottom: 1px solid #2f5568;
+    }
+
+    .leaderboard-section {
+      margin-top: 2rem;
+    }
+
+    .leaderboard-container {
+      background: linear-gradient(135deg, #0a1f2a, #041016);
+      border-radius: 28px;
+      padding: 1.5rem;
+      border: 2px solid #ffaa44;
+      overflow-x: auto;
+    }
+
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .leaderboard-table th {
+      background: linear-gradient(135deg, #ffaa44, #ff8844);
+      color: #0a0c12;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .leaderboard-table td {
+      padding: 10px;
+      text-align: center;
+      border-bottom: 1px solid #2f5568;
+    }
+
+    .position-1 { background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), transparent); }
+    .position-2 { background: linear-gradient(90deg, rgba(192, 192, 192, 0.2), transparent); }
+    .position-3 { background: linear-gradient(90deg, rgba(205, 127, 50, 0.2), transparent); }
+    .kill-count { font-weight: bold; color: #ff6666; }
+
+    footer {
+      margin-top: 3rem;
+      background: #03090ed9;
+      backdrop-filter: blur(10px);
+      border-radius: 32px;
+      padding: 1.2rem 1.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+      border-top: 1px solid cyan;
+    }
+
+    @media (max-width: 720px) {
+      .deadline-title { font-size: 2.5rem; letter-spacing: 4px; }
+      .tournament-card { min-width: 180px; }
+      .score-input-group input { min-width: 100px; }
+    }
+
+    .error-msg { color: #ffa2a2; background: #3a1420; padding: 6px; border-radius: 28px; text-align: center; margin-top: 10px; }
+    .success-msg { color: #b8ffdd; background: #1a423a; padding: 6px; border-radius: 28px; text-align: center; margin-top: 10px; }
+    .empty-state { text-align: center; padding: 2rem; color: #88aacc; font-style: italic; }
+    .otp-display { background: #0a212b; padding: 12px; border-radius: 28px; margin: 12px 0; text-align: center; font-size: 1.7rem; font-weight: bold; letter-spacing: 4px; color: #0ff; }
+    .format-selector { display: flex; gap: 1rem; margin-bottom: 1rem; }
+    .format-btn { flex: 1; background: #2a3a4a; }
+    .format-btn.active { background: linear-gradient(95deg, #00a6c4, #0080aa); }
+    .prize-input-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.8rem; }
+    .player-slots-group { background: #0a1a22; border-radius: 20px; padding: 1rem; margin-top: 1rem; border: 1px solid #2f5568; }
+    .player-slot-input { margin-bottom: 10px; }
+    .leaderboard-entry { background: #0a161c; border-radius: 12px; padding: 10px; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .leaderboard-entry input { flex: 1; min-width: 100px; margin: 0; padding: 8px; }
+    .remove-entry-btn { background: #b52e4a; width: auto; padding: 8px 16px; margin: 0; }
+    .add-entry-btn { background: #2ecc71; width: auto; margin-top: 10px; }
+    .leaderboard-actions { display: flex; gap: 1rem; margin-bottom: 1rem; }
+    .download-btn { background: linear-gradient(95deg, #2ecc71, #27ae60); width: auto; padding: 8px 20px; }
+    .tournament-management-row {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+
+<div id="loginModal" class="login-overlay">
+  <div class="login-modal">
+    <h2>?? TOURNAMENT ACCESS</h2>
+    <div id="loginStep1">
+      <p>Enter your name to receive OTP</p>
+      <div class="login-input">
+        <input type="text" id="playerNameLogin" placeholder="Enter your name">
+      </div>
+      <button onclick="generateAndShowOTP()" class="login-btn">?? GENERATE OTP</button>
+    </div>
+    <div id="loginStep2" style="display:none;">
+      <p>Your unique OTP code:</p>
+      <div id="otpDisplayBox" class="otp-display">------</div>
+      <p style="font-size:0.75rem;">Enter OTP to complete login</p>
+      <div class="login-input">
+        <input type="text" id="otpCode" placeholder="Enter OTP" maxlength="6">
+      </div>
+      <button onclick="verifyLoginOTP()" class="login-btn">? VERIFY & ENTER</button>
+      <button onclick="resendLoginOTP()" style="background:#3a4a55; margin-top:10px;">?? NEW OTP</button>
+    </div>
+    <div id="loginMessage" style="margin-top:0.8rem;"></div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <div class="deadline-title">DEADLINE</div>
+    <div class="tagline">MULTI-TOURNAMENT ARENA • LIVE SCORE DISPLAY</div>
+  </div>
+
+  <div class="live-score-section" id="liveScoreSection">
+    <div class="live-score-header">
+      <div class="live-title">
+        <div class="live-pulse"></div>
+        <h3>?? LIVE SCORE BOARD</h3>
+        <span class="live-badge">REAL-TIME UPDATES</span>
+      </div>
+      <div id="liveScoreAdminControls" style="display: none;">
+        <button id="clearLiveMessagesBtn" class="clear-live-btn" style="background:#4a2a2a; width:auto; padding:5px 12px;">??? CLEAR ALL</button>
+      </div>
+    </div>
+    
+    <div class="live-score-display">
+      <div class="live-score-container" id="liveScoreContainer">
+        <div class="live-score-messages" id="liveScoreMessages">
+          <div class="empty-score">?? Waiting for live score updates... Admin will post scores here</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="score-admin-control" id="scoreAdminPanel" style="display: none;">
+      <div class="score-input-group">
+        <select id="scoreTeamSelect">
+          <option value="Team A / Player 1">?? Team A / Player 1</option>
+          <option value="Team B / Player 2">?? Team B / Player 2</option>
+          <option value="Match Update">? Match Update</option>
+          <option value="Tournament Info">?? Tournament Info</option>
+          <option value="Kill Update">?? Kill Update</option>
+          <option value="Winner Announcement">?? Winner Announcement</option>
+        </select>
+        <input type="text" id="scoreValueInput" placeholder="Score / Update (e.g., 5-3, WIN, 10 Kills)">
+        <input type="text" id="scoreDetailsInput" placeholder="Additional details (optional)">
+        <button id="postScoreBtn" class="post-score-btn">?? POST LIVE UPDATE</button>
+      </div>
+      <div style="font-size:0.7rem; margin-top:8px; color:#88aacc;">?? Tip: Choose a color category - Light Blue (Info), Yellow (Warning), Green (Success), Light Pink (Special)</div>
+    </div>
+  </div>
+
+  <div class="tournaments-container">
+    <div class="tournaments-scroll" id="tournamentsScroll">
+      <div class="tournaments-row" id="tournamentsRow"></div>
+    </div>
+  </div>
+
+  <div id="adminTournamentControls" style="display: none;">
+    <div class="tournament-admin-controls">
+      <div class="tournament-management-row">
+        <button id="createTournamentAdminBtn" class="create-tournament-admin-btn">? CREATE NEW TOURNAMENT</button>
+        <button id="deleteTournamentAdminBtn" class="delete-tournament-admin-btn">??? DELETE TOURNAMENT</button>
+      </div>
+      <div class="admin-only-badge">?? ADMIN ONLY</div>
+    </div>
+  </div>
+
+  <div id="roomInfoPanel" class="room-info-panel">
+    <h3 style="color:#ffcc66; text-align:center;">?? TOURNAMENT DETAILS ??</h3>
+    <div id="roomDetails" class="room-details"></div>
+  </div>
+
+  <div class="slot-panel">
+    <div class="counter">?? REGISTERED: <span id="slotCount">0</span> / <span id="maxSlots">48</span></div>
+    <div id="userDisplayBadge" class="admin-badge">?? NOT LOGGED IN</div>
+  </div>
+
+  <div class="dashboard">
+    <div class="register-card">
+      <h2>?? ENLIST NOW</h2>
+      <div id="formatIndicator" style="background:#1a2a2a; padding:8px; border-radius:20px; margin-bottom:12px; text-align:center;">
+        Current Format: <strong id="currentFormatName">1vs1 Tournament</strong>
+      </div>
+      <form id="registerForm">
+        <input type="text" id="playerName" placeholder="Full Name" required>
+        <input type="text" id="gamingID" placeholder="Gaming ID / Username" required>
+        <input type="text" id="playerDetails" placeholder="Game / Role (optional)">
+        
+        <div id="teamSelectionDiv" style="display:none;">
+          <select id="teamSelect">
+            <option value="">Create New Team (as Captain)</option>
+          </select>
+          
+          <div class="player-slots-group" id="playerSlotsDiv" style="display:none;">
+            <div class="player-slots-title">?? ADD TEAM MEMBERS (3 Players)</div>
+            <div class="player-slot-input"><input type="text" id="player1Name" placeholder="Player 1 Name"></div>
+            <div class="player-slot-input"><input type="text" id="player1GamingId" placeholder="Player 1 Gaming ID"></div>
+            <div class="player-slot-input"><input type="text" id="player2Name" placeholder="Player 2 Name"></div>
+            <div class="player-slot-input"><input type="text" id="player2GamingId" placeholder="Player 2 Gaming ID"></div>
+            <div class="player-slot-input"><input type="text" id="player3Name" placeholder="Player 3 Name"></div>
+            <div class="player-slot-input"><input type="text" id="player3GamingId" placeholder="Player 3 Gaming ID"></div>
+          </div>
+          
+          <label style="font-size:0.8rem; display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+            <input type="checkbox" id="isCaptainCheckbox"> ?? Register as Captain & Create Team
+          </label>
+        </div>
+        
+        <button type="submit">?? CLAIM SLOT ??</button>
+      </form>
+      <div id="regFeedback"></div>
+    </div>
+
+    <div class="admin-section">
+      <h2>?? ADMIN CONTROL CENTER</h2>
+      <div id="adminPanelContent" style="display: none;">
+        <div style="background:#0f1c24; border-radius:24px; padding:0.5rem; margin-bottom:1rem; text-align:center;">
+          <span style="color:#ffaa99;">?? Admin privileges active</span>
+        </div>
+        
+        <div class="admin-phase-section">
+          <div class="phase-title">?? TOURNAMENT FORMAT</div>
+          <div class="format-selector">
+            <button id="format1v1Btn" class="format-btn active">1vs1 (48 Players)</button>
+            <button id="format4v4Btn" class="format-btn">4vs4 (12 Teams)</button>
+          </div>
+        </div>
+
+        <div class="admin-phase-section">
+          <div class="phase-title">?? PRIZE MONEY</div>
+          <div class="prize-input-group">
+            <input type="text" id="prize1st" placeholder="1st Place Prize" value="?10,000">
+            <input type="text" id="prize2nd" placeholder="2nd Place Prize" value="?5,000">
+            <input type="text" id="prize3rd" placeholder="3rd Place Prize" value="?2,500">
+          </div>
+          <button id="announcePrizesBtn" class="phase-btn">?? ANNOUNCE PRIZES</button>
+        </div>
+        
+        <div class="admin-phase-section">
+          <div class="phase-title">?? DATE & TIME</div>
+          <div class="room-input-group">
+            <input type="date" id="phase1Date">
+            <input type="time" id="phase1Time">
+          </div>
+          <button id="publishDateTimeBtn" class="phase-btn">?? PUBLISH DATE & TIME</button>
+          <div id="phase1Status"></div>
+        </div>
+
+        <div class="admin-phase-section">
+          <div class="phase-title">?? ROOM CREDENTIALS</div>
+          <input type="text" id="roomIdInput" placeholder="Room ID">
+          <input type="text" id="roomPasswordInput" placeholder="Password">
+          <button id="publishRoomCredsBtn" class="admin-btn">?? PUBLISH ROOM & PASSWORD</button>
+          <div id="phase2Status"></div>
+        </div>
+
+        <div class="admin-phase-section">
+          <div class="phase-title">?? LEADERBOARD</div>
+          <button id="manageLeaderboardBtn" class="phase-btn">?? EDIT LEADERBOARD</button>
+          <button id="publishLeaderboardBtn" class="phase-btn publish-btn">?? PUBLISH LEADERBOARD</button>
+        </div>
+
+        <div id="leaderboardEditor" style="display:none; margin-top:1rem;">
+          <div class="phase-title">?? EDIT LEADERBOARD</div>
+          <div id="leaderboardEntriesList"></div>
+          <button id="addLeaderboardEntryBtn" class="add-entry-btn">? ADD ENTRY</button>
+          <button id="saveLeaderboardEntriesBtn" class="phase-btn">?? SAVE</button>
+          <button id="closeEditorBtn" class="admin-btn">? CLOSE</button>
+        </div>
+
+        <div class="admin-phase-section">
+          <div class="phase-title">?? EXPORT DATA</div>
+          <button id="downloadCSVBtn" class="phase-btn">?? Download CSV</button>
+          <button id="downloadJSONBtn" class="phase-btn">?? Download JSON</button>
+        </div>
+
+        <div class="manual-add">
+          <h3 style="font-size:1rem;">?? MANUAL ADD PLAYER</h3>
+          <input type="text" id="adminName" placeholder="Full Name">
+          <input type="text" id="adminGamingId" placeholder="Gaming ID">
+          <input type="text" id="adminDetails" placeholder="Role">
+          <button id="manualAddBtn" class="admin-btn">? ADD PLAYER</button>
+        </div>
+      </div>
+      <button id="adminAuthBtn" class="admin-btn">?? ADMIN LOGIN</button>
+      <div id="adminFeedback"></div>
+    </div>
+  </div>
+
+  <div class="leaderboard-section" id="leaderboardSection" style="display:none;">
+    <div class="leaderboard-header">
+      <h2>?? LEADERBOARD ??</h2>
+      <div class="leaderboard-actions">
+        <button id="downloadImageBtn" class="download-btn">??? Download Image</button>
+        <button id="downloadPDFBtn" class="download-btn">?? Download PDF</button>
+      </div>
+    </div>
+    <div id="leaderboardContainer" class="leaderboard-container"></div>
+  </div>
+
+  <div class="players-section">
+    <h2>?? REGISTERED PLAYERS & TEAMS</h2>
+    <div id="teamsListContainer"></div>
+  </div>
+
+  <footer>
+    <div>?? PHONE: <strong>9315710562</strong> | ?? EMAIL: <strong>rulersk709@gmail.com</strong></div>
+    <div>?? INSTAGRAM: @ruler_sk_168 | DEADLINE — Rise or Fall</div>
+  </footer>
+</div>
+
+<script>
+  // Data Models
+  let tournaments = {};
+  let currentTournamentId = null;
+  let adminLogged = false;
+  let currentUser = null;
+  let currentOTP = null;
+  let otpName = null;
+  const ADMIN_PASSWORD = "deadlineadmin";
+  let nextTournamentId = 1;
+
+  // Live Score Data with color mapping
+  let liveMessages = [];
+  const colorCategories = ['light-blue', 'yellow', 'green', 'light-pink'];
+
+  function getColorForMessage(team) {
+    const teamLower = team.toLowerCase();
+    if (teamLower.includes('info') || teamLower.includes('tournament') || teamLower.includes('date') || teamLower.includes('time')) {
+      return 'light-blue';
+    }
+    if (teamLower.includes('warning') || teamLower.includes('alert') || teamLower.includes('careful')) {
+      return 'yellow';
+    }
+    if (teamLower.includes('win') || teamLower.includes('victory') || teamLower.includes('champion') || teamLower.includes('kill')) {
+      return 'green';
+    }
+    if (teamLower.includes('special') || teamLower.includes('announcement') || teamLower.includes('event') || teamLower.includes('bonus')) {
+      return 'light-pink';
+    }
+    const hash = team.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colorCategories[hash % colorCategories.length];
+  }
+
+  class Tournament {
+    constructor(id, name, format) {
+      this.id = id;
+      this.name = name;
+      this.format = format;
+      this.players = [];
+      this.teams = [];
+      this.registeredGamingIds = new Set();
+      this.prizeMoney = { first: "?10,000", second: "?5,000", third: "?2,500" };
+      this.prizeAnnounced = false;
+      this.tournamentDateTime = { date: "", time: "" };
+      this.roomCredentials = { roomId: "", password: "" };
+      this.leaderboardPublished = false;
+      this.customLeaderboardData = [];
+    }
+
+    getMaxSlots() { return this.format === "1v1" ? 48 : 48; }
+    getCurrentCount() {
+      if (this.format === "1v1") return this.players.length;
+      return this.teams.reduce((sum, t) => sum + 1 + t.players.length, 0);
+    }
+  }
+
+  // Load/Save Functions
+  function loadFromLocalStorage() {
+    const savedTournaments = localStorage.getItem('deadline_multi_tournaments_v3');
+    const savedCurrentId = localStorage.getItem('deadline_current_tournament_id');
+    const savedNextId = localStorage.getItem('deadline_next_tournament_id');
+    const savedLiveMessages = localStorage.getItem('deadline_live_messages_v2');
+    
+    if (savedLiveMessages) liveMessages = JSON.parse(savedLiveMessages);
+    else liveMessages = [];
+    
+    if (savedTournaments) {
+      const parsed = JSON.parse(savedTournaments);
+      tournaments = {};
+      for (const [id, data] of Object.entries(parsed)) {
+        const tournament = new Tournament(data.id, data.name, data.format);
+        tournament.players = data.players || [];
+        tournament.teams = data.teams || [];
+        tournament.registeredGamingIds = new Set(data.registeredGamingIds || []);
+        tournament.prizeMoney = data.prizeMoney || { first: "?10,000", second: "?5,000", third: "?2,500" };
+        tournament.prizeAnnounced = data.prizeAnnounced || false;
+        tournament.tournamentDateTime = data.tournamentDateTime || { date: "", time: "" };
+        tournament.roomCredentials = data.roomCredentials || { roomId: "", password: "" };
+        tournament.leaderboardPublished = data.leaderboardPublished || false;
+        tournament.customLeaderboardData = data.customLeaderboardData || [];
+        tournaments[id] = tournament;
+      }
+    }
+    
+    if (savedCurrentId && tournaments[savedCurrentId]) currentTournamentId = savedCurrentId;
+    else {
+      const firstId = Object.keys(tournaments)[0];
+      if (firstId) currentTournamentId = firstId;
+      else createNewTournament("Default Tournament", "1v1");
+    }
+    
+    if (savedNextId) nextTournamentId = parseInt(savedNextId);
+    
+    renderTournamentCards();
+    updateCurrentTournamentDisplay();
+    renderLiveMessages();
+  }
+
+  function saveToLocalStorage() {
+    const saveData = {};
+    for (const [id, tournament] of Object.entries(tournaments)) {
+      saveData[id] = {
+        id: tournament.id, name: tournament.name, format: tournament.format,
+        players: tournament.players, teams: tournament.teams,
+        registeredGamingIds: Array.from(tournament.registeredGamingIds),
+        prizeMoney: tournament.prizeMoney, prizeAnnounced: tournament.prizeAnnounced,
+        tournamentDateTime: tournament.tournamentDateTime,
+        roomCredentials: tournament.roomCredentials,
+        leaderboardPublished: tournament.leaderboardPublished,
+        customLeaderboardData: tournament.customLeaderboardData
+      };
+    }
+    localStorage.setItem('deadline_multi_tournaments_v3', JSON.stringify(saveData));
+    localStorage.setItem('deadline_current_tournament_id', currentTournamentId);
+    localStorage.setItem('deadline_next_tournament_id', nextTournamentId);
+    localStorage.setItem('deadline_live_messages_v2', JSON.stringify(liveMessages));
+  }
+
+  // Live Score Functions
+  function postLiveUpdate(team, score, details) {
+    const colorClass = getColorForMessage(team);
+    const message = {
+      id: Date.now(),
+      team: team,
+      score: score,
+      details: details || "",
+      timestamp: new Date().toLocaleTimeString(),
+      date: new Date().toLocaleDateString(),
+      color: colorClass
+    };
+    liveMessages.unshift(message);
+    if (liveMessages.length > 50) liveMessages.pop();
+    saveToLocalStorage();
+    renderLiveMessages();
+    showNotification(`Live update posted: ${team} - ${score}`, 'success');
+  }
+
+  function clearLiveMessages() {
+    if (confirm("??? Clear ALL live score messages? This cannot be undone.")) {
+      liveMessages = [];
+      saveToLocalStorage();
+      renderLiveMessages();
+      showNotification("All live messages cleared", 'success');
+    }
+  }
+
+  function renderLiveMessages() {
+    const container = document.getElementById('liveScoreMessages');
+    if (!container) return;
+    
+    if (liveMessages.length === 0) {
+      container.innerHTML = '<div class="empty-score">?? Waiting for live score updates... Admin will post scores here</div>';
+      return;
+    }
+    
+    container.innerHTML = liveMessages.map(msg => `
+      <div class="score-message ${msg.color}">
+        <div class="score-header">
+          <span class="score-team">?? ${escapeHtml(msg.team)}</span>
+          <span class="score-time">${msg.date} ${msg.timestamp}</span>
+        </div>
+        <div class="score-value">${escapeHtml(msg.score)}</div>
+        ${msg.details ? `<div class="score-details">?? ${escapeHtml(msg.details)}</div>` : ''}
+      </div>
+    `).join('');
+    
+    const scoreContainer = document.getElementById('liveScoreContainer');
+    if (scoreContainer) scoreContainer.scrollTop = 0;
+  }
+
+  // Tournament Functions
+  function createNewTournament(name, format) {
+    const id = nextTournamentId.toString();
+    nextTournamentId++;
+    tournaments[id] = new Tournament(id, name, format);
+    currentTournamentId = id;
+    saveToLocalStorage();
+    renderTournamentCards();
+    updateCurrentTournamentDisplay();
+    showNotification(`Tournament "${name}" created!`, 'success');
+    return id;
+  }
+
+  function deleteTournamentById(tournamentId) {
+    if (Object.keys(tournaments).length <= 1) {
+      showNotification("Cannot delete the last tournament! Create a new one first.", 'error');
+      return false;
+    }
+    
+    const tournamentToDelete = tournaments[tournamentId];
+    if (!tournamentToDelete) {
+      showNotification("Tournament not found!", 'error');
+      return false;
+    }
+    
+    if (confirm(`?? WARNING: Are you sure you want to delete tournament "${tournamentToDelete.name}"?\n\nThis will permanently delete ALL data including:\n- All registered players/teams\n- All tournament settings\n- Leaderboard data\n\nThis action cannot be undone!`)) {
+      delete tournaments[tournamentId];
+      
+      const remainingIds = Object.keys(tournaments);
+      if (remainingIds.length > 0) {
+        currentTournamentId = remainingIds[0];
+      } else {
+        currentTournamentId = null;
+      }
+      
+      saveToLocalStorage();
+      renderTournamentCards();
+      if (currentTournamentId) {
+        updateCurrentTournamentDisplay();
+      } else {
+        location.reload();
+      }
+      showNotification(`Tournament "${tournamentToDelete.name}" has been deleted successfully!`, 'success');
+      return true;
+    }
+    return false;
+  }
+
+  function deleteCurrentTournament() {
+    if (!currentTournamentId) {
+      showNotification("No tournament selected!", 'error');
+      return;
+    }
+    deleteTournamentById(currentTournamentId);
+  }
+
+  function switchTournament(tournamentId) {
+    if (tournaments[tournamentId]) {
+      currentTournamentId = tournamentId;
+      saveToLocalStorage();
+      updateCurrentTournamentDisplay();
+      renderTournamentCards();
+      showNotification(`Switched to: ${tournaments[tournamentId].name}`, 'success');
+    }
+  }
+
+  function renderTournamentCards() {
+    const row = document.getElementById('tournamentsRow');
+    if (!row) return;
+    row.innerHTML = '';
+    
+    for (const [id, t] of Object.entries(tournaments)) {
+      const isActive = currentTournamentId === id;
+      const card = document.createElement('div');
+      card.className = `tournament-card ${isActive ? 'active' : ''}`;
+      card.setAttribute('data-format', t.format);
+      card.onclick = (e) => { 
+        if (!e.target.classList.contains('tournament-delete-btn')) {
+          switchTournament(id);
+        }
+      };
+      card.innerHTML = `
+        <div class="tournament-card-header">
+          <span class="tournament-badge" data-format="${t.format}">${t.format === "1v1" ? "?? 1VS1" : "?? 4VS4"}</span>
+          ${adminLogged ? `<button class="tournament-delete-btn" onclick="event.stopPropagation(); deleteTournamentById('${id}')">???</button>` : ''}
+        </div>
+        <div class="tournament-name">${escapeHtml(t.name)}</div>
+        <div class="tournament-stats">
+          <span>?? ${t.getCurrentCount()}/${t.getMaxSlots()}</span>
+          <span>?? ${t.prizeAnnounced ? 'Prize Set' : 'No Prize'}</span>
+        </div>
+        <div class="tournament-stats">
+          <span>?? ${t.tournamentDateTime.date || 'TBA'}</span>
+          <span>?? ${t.roomCredentials.roomId ? 'Ready' : 'Not Set'}</span>
+        </div>
+      `;
+      row.appendChild(card);
+    }
+  }
+
+  function getCurrentTournament() { return tournaments[currentTournamentId]; }
+
+  function updateCurrentTournamentDisplay() {
+    const t = getCurrentTournament();
+    if (!t) return;
+    updateFormatUI();
+    updateSlotCount();
+    renderTeamsList();
+    updateDisplayPanel();
+    updateAdminPhaseStatus();
+    updateAdminControlsVisibility();
+    
+    if (t.leaderboardPublished && t.customLeaderboardData.length > 0) {
+      renderLeaderboardFromCustomData();
+      document.getElementById('leaderboardSection').style.display = 'block';
+    } else {
+      document.getElementById('leaderboardSection').style.display = 'none';
+    }
+  }
+
+  function updateAdminControlsVisibility() {
+    const controls = document.getElementById('adminTournamentControls');
+    const scorePanel = document.getElementById('scoreAdminPanel');
+    const liveAdminControls = document.getElementById('liveScoreAdminControls');
+    
+    controls.style.display = adminLogged ? 'block' : 'none';
+    scorePanel.style.display = adminLogged ? 'block' : 'none';
+    liveAdminControls.style.display = adminLogged ? 'block' : 'none';
+  }
+
+  function isGamingIdRegistered(gamingId, isAdmin = false) {
+    if (isAdmin) return false;
+    return getCurrentTournament().registeredGamingIds.has(gamingId.toLowerCase().trim());
+  }
+
+  function updateSlotCount() {
+    const t = getCurrentTournament();
+    document.getElementById('slotCount').innerText = t.getCurrentCount();
+    document.getElementById('maxSlots').innerText = t.getMaxSlots();
+  }
+
+  function updateFormatUI() {
+    const t = getCurrentTournament();
+    document.getElementById('currentFormatName').innerText = t.format === "1v1" ? "1vs1 Tournament (48 Players)" : "4vs4 Tournament (12 Teams)";
+    const teamDiv = document.getElementById('teamSelectionDiv');
+    if (t.format === "4v4") teamDiv.style.display = "block";
+    else teamDiv.style.display = "none";
+    
+    const btn1 = document.getElementById('format1v1Btn'), btn2 = document.getElementById('format4v4Btn');
+    if (t.format === "1v1") { btn1.classList.add('active'); btn2.classList.remove('active'); }
+    else { btn1.classList.remove('active'); btn2.classList.add('active'); }
+  }
+
+  function updateTeamSelect() {
+    const t = getCurrentTournament();
+    const select = document.getElementById('teamSelect');
+    select.innerHTML = '<option value="">Create New Team (as Captain)</option>';
+    t.teams.forEach((team, idx) => {
+      if (team.players.length < 3) select.innerHTML += `<option value="${idx}">Team ${idx+1} - ${team.captain.name}</option>`;
+    });
+  }
+
+  function addPlayer(name, gamingId, details, isAdmin = false) {
+    const t = getCurrentTournament();
+    if (!currentUser && !isAdmin) return { success: false, message: "Login required!" };
+    if (!isAdmin && isGamingIdRegistered(gamingId)) return { success: false, message: `Gaming ID "${gamingId}" already registered!` };
+    
+    if (t.format === "1v1") {
+      if (t.players.length >= t.getMaxSlots()) return { success: false, message: "Tournament full!" };
+      t.players.push({ id: Date.now(), name: name.trim(), gamingId: gamingId.trim(), details: details.trim() || "Ready", kills: 0 });
+      t.registeredGamingIds.add(gamingId.toLowerCase().trim());
+      saveToLocalStorage();
+      renderTeamsList();
+      updateSlotCount();
+      return { success: true, message: "Registered!" };
+    } else {
+      const isCaptain = document.getElementById('isCaptainCheckbox')?.checked || false;
+      const teamIdx = parseInt(document.getElementById('teamSelect')?.value);
+      if (isCaptain) {
+        const p1 = document.getElementById('player1Name')?.value;
+        const p1g = document.getElementById('player1GamingId')?.value;
+        if (!p1 || !p1g) return { success: false, message: "Add at least one player!" };
+        const newTeam = { id: Date.now(), captain: { name: name.trim(), gamingId: gamingId.trim(), details: details.trim() || "Captain", kills: 0 }, players: [] };
+        if (p1 && p1g) newTeam.players.push({ name: p1, gamingId: p1g, details: "Player", kills: 0 });
+        t.registeredGamingIds.add(gamingId.toLowerCase().trim());
+        if (p1g) t.registeredGamingIds.add(p1g.toLowerCase().trim());
+        t.teams.push(newTeam);
+        saveToLocalStorage();
+        renderTeamsList();
+        updateSlotCount();
+        updateTeamSelect();
+        return { success: true, message: "Team created!" };
+      } else if (!isNaN(teamIdx) && t.teams[teamIdx]) {
+        if (t.teams[teamIdx].players.length >= 3) return { success: false, message: "Team full!" };
+        t.teams[teamIdx].players.push({ name: name.trim(), gamingId: gamingId.trim(), details: details.trim() || "Player", kills: 0 });
+        t.registeredGamingIds.add(gamingId.toLowerCase().trim());
+        saveToLocalStorage();
+        renderTeamsList();
+        updateSlotCount();
+        updateTeamSelect();
+        return { success: true, message: "Added to team!" };
+      }
+      return { success: false, message: "Select valid team or become captain." };
+    }
+  }
+
+  function renderTeamsList() {
+    const t = getCurrentTournament();
+    const container = document.getElementById('teamsListContainer');
+    if (t.format === "1v1") {
+      if (t.players.length === 0) { container.innerHTML = '<div class="empty-state">No players yet</div>'; return; }
+      let html = '<table class="teams-table"><thead><tr><th>#</th><th>Name</th><th>Gaming ID</th><th>Kills</th></tr></thead><tbody>';
+      t.players.forEach((p, i) => { html += `<tr><td>${i+1}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.gamingId)}</td><td>${p.kills || 0}</td></tr>`; });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    } else {
+      if (t.teams.length === 0) { container.innerHTML = '<div class="empty-state">No teams yet</div>'; return; }
+      let html = '<table class="teams-table"><thead><tr><th>Team</th><th>Captain</th><th>Players</th><th>Total Kills</th></tr></thead><tbody>';
+      t.teams.forEach((team, i) => {
+        let totalKills = (team.captain.kills || 0) + team.players.reduce((s, p) => s + (p.kills || 0), 0);
+        let playersList = team.players.map(p => `${p.name} (${p.gamingId})`).join(', ');
+        html += `<tr><td>Team ${i+1}</td><td>${escapeHtml(team.captain.name)}</td><td>${playersList || 'Empty'}</td><td>${totalKills}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+  }
+
+  function updateDisplayPanel() {
+    const t = getCurrentTournament();
+    const panel = document.getElementById('roomInfoPanel');
+    const detailsDiv = document.getElementById('roomDetails');
+    const hasInfo = t.tournamentDateTime.date || t.roomCredentials.roomId || t.prizeAnnounced;
+    if (hasInfo) {
+      panel.classList.add('active');
+      let html = `<div class="room-card"><strong>?? ${escapeHtml(t.name)}</strong></div>`;
+      if (t.tournamentDateTime.date) html += `<div class="room-card"><strong>?? DATE</strong><br>${t.tournamentDateTime.date} ${t.tournamentDateTime.time || ''}</div>`;
+      if (t.roomCredentials.roomId) html += `<div class="room-card"><strong>?? ROOM</strong><br>${t.roomCredentials.roomId}</div>`;
+      if (t.prizeAnnounced) html += `<div class="room-card"><strong>?? PRIZE</strong><br>${t.prizeMoney.first} | ${t.prizeMoney.second} | ${t.prizeMoney.third}</div>`;
+      detailsDiv.innerHTML = html;
+    } else panel.classList.remove('active');
+  }
+
+  function updateAdminPhaseStatus() {
+    const t = getCurrentTournament();
+    document.getElementById('phase1Status').innerHTML = t.tournamentDateTime.date ? `<span style="color:#aaffaa;">? ${t.tournamentDateTime.date}</span>` : '<span style="color:#ffaa66;">? Not set</span>';
+    document.getElementById('phase2Status').innerHTML = t.roomCredentials.roomId ? `<span style="color:#aaffaa;">?? ${t.roomCredentials.roomId}</span>` : '<span style="color:#ffaa66;">?? Not set</span>';
+  }
+
+  function publishDateTime() {
+    if (!adminLogged) return;
+    const t = getCurrentTournament();
+    const d = document.getElementById('phase1Date').value, time = document.getElementById('phase1Time').value;
+    if (d || time) {
+      t.tournamentDateTime = { date: d, time: time };
+      saveToLocalStorage();
+      updateDisplayPanel();
+      updateAdminPhaseStatus();
+      showNotification("Date/Time published", 'success');
+    }
+  }
+
+  function publishRoomCredentials() {
+    if (!adminLogged) return;
+    const t = getCurrentTournament();
+    const rid = document.getElementById('roomIdInput').value.trim();
+    if (!rid) { showNotification("Room ID required", 'error'); return; }
+    t.roomCredentials = { roomId: rid, password: document.getElementById('roomPasswordInput').value };
+    saveToLocalStorage();
+    updateDisplayPanel();
+    updateAdminPhaseStatus();
+    showNotification("Room credentials published", 'success');
+  }
+
+  function announcePrizes() {
+    if (!adminLogged) return;
+    const t = getCurrentTournament();
+    t.prizeMoney = {
+      first: document.getElementById('prize1st').value,
+      second: document.getElementById('prize2nd').value,
+      third: document.getElementById('prize3rd').value
+    };
+    t.prizeAnnounced = true;
+    saveToLocalStorage();
+    updateDisplayPanel();
+    showNotification("Prizes announced!", 'success');
+  }
+
+  function setFormat(fmt) {
+    if (!adminLogged) return;
+    const t = getCurrentTournament();
+    if (t.getCurrentCount() > 0 && !confirm("Changing format clears all registrations!")) return;
+    t.format = fmt;
+    t.players = [];
+    t.teams = [];
+    t.registeredGamingIds.clear();
+    t.leaderboardPublished = false;
+    t.customLeaderboardData = [];
+    saveToLocalStorage();
+    updateFormatUI();
+    renderTeamsList();
+    updateSlotCount();
+    renderTournamentCards();
+    showNotification(`Format changed to ${fmt === '1v1' ? '1vs1' : '4vs4'}`, 'success');
+  }
+
+  function generateInitialLeaderboardData() {
+    const t = getCurrentTournament();
+    t.customLeaderboardData = [];
+    if (t.format === "1v1") {
+      t.players.forEach(p => t.customLeaderboardData.push({ teamName: p.name, captainName: p.name, kills: p.kills || 0 }));
+    } else {
+      t.teams.forEach((team, i) => {
+        let totalKills = (team.captain.kills || 0) + team.players.reduce((s, p) => s + (p.kills || 0), 0);
+        t.customLeaderboardData.push({ teamName: `Team ${i+1}`, captainName: team.captain.name, kills: totalKills });
+      });
+    }
+    t.customLeaderboardData.sort((a, b) => b.kills - a.kills);
+    t.customLeaderboardData.forEach((item, i) => item.position = i + 1);
+  }
+
+  function renderLeaderboardFromCustomData() {
+    const t = getCurrentTournament();
+    const container = document.getElementById('leaderboardContainer');
+    const sorted = [...t.customLeaderboardData].sort((a, b) => b.kills - a.kills);
+    let html = `<div class="leaderboard-title">?? ${escapeHtml(t.name)} LEADERBOARD</div><table class="leaderboard-table"><thead><tr><th>POS</th><th>NAME</th><th>CAPTAIN</th><th>KILLS</th></tr></thead><tbody>`;
+    sorted.forEach((entry, i) => {
+      let posClass = i === 0 ? 'position-1' : i === 1 ? 'position-2' : i === 2 ? 'position-3' : '';
+      html += `<tr class="${posClass}"><td>${i+1}</td><td><strong>${escapeHtml(entry.teamName)}</strong></td><td>${escapeHtml(entry.captainName)}</td><td class="kill-count">${entry.kills}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+  }
+
+  function showLeaderboardEditor() {
+    const t = getCurrentTournament();
+    if (t.customLeaderboardData.length === 0) generateInitialLeaderboardData();
+    const editor = document.getElementById('leaderboardEditor');
+    const list = document.getElementById('leaderboardEntriesList');
+    list.innerHTML = '';
+    t.customLeaderboardData.forEach((entry, idx) => {
+      const div = document.createElement('div');
+      div.className = 'leaderboard-entry';
+      div.innerHTML = `
+        <input type="text" value="${escapeHtml(entry.teamName)}" data-index="${idx}" data-field="team" style="flex:2">
+        <input type="text" value="${escapeHtml(entry.captainName)}" data-index="${idx}" data-field="captain" style="flex:2">
+        <input type="number" value="${entry.kills}" data-index="${idx}" data-field="kills" style="flex:1">
+        <button class="remove-entry-btn" data-index="${idx}">???</button>
+      `;
+      list.appendChild(div);
+    });
+    document.querySelectorAll('.leaderboard-entry input').forEach(inp => {
+      inp.addEventListener('change', function() {
+        const idx = parseInt(this.dataset.index);
+        const field = this.dataset.field;
+        if (field === 'team') t.customLeaderboardData[idx].teamName = this.value;
+        else if (field === 'captain') t.customLeaderboardData[idx].captainName = this.value;
+        else if (field === 'kills') t.customLeaderboardData[idx].kills = parseInt(this.value);
+      });
+    });
+    document.querySelectorAll('.remove-entry-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        t.customLeaderboardData.splice(parseInt(this.dataset.index), 1);
+        showLeaderboardEditor();
+      });
+    });
+    editor.style.display = 'block';
+  }
+
+  function saveLeaderboardEntries() {
+    getCurrentTournament().customLeaderboardData.sort((a, b) => b.kills - a.kills);
+    saveToLocalStorage();
+    showNotification("Leaderboard saved!", 'success');
+    document.getElementById('leaderboardEditor').style.display = 'none';
+  }
+
+  function publishLeaderboard() {
+    const t = getCurrentTournament();
+    if (t.customLeaderboardData.length === 0) generateInitialLeaderboardData();
+    t.leaderboardPublished = true;
+    saveToLocalStorage();
+    renderLeaderboardFromCustomData();
+    document.getElementById('leaderboardSection').style.display = 'block';
+    showNotification("Leaderboard published!", 'success');
+  }
+
+  function downloadMembersList(type) {
+    const t = getCurrentTournament();
+    let data = [];
+    if (t.format === '1v1') data = t.players.map(p => ({ Name: p.name, GamingID: p.gamingId, Kills: p.kills || 0 }));
+    else t.teams.forEach((team, i) => {
+      data.push({ Team: `Team ${i+1}`, Name: team.captain.name, GamingID: team.captain.gamingId, Role: "Captain", Kills: team.captain.kills || 0 });
+      team.players.forEach(p => data.push({ Team: `Team ${i+1}`, Name: p.name, GamingID: p.gamingId, Role: "Player", Kills: p.kills || 0 }));
+    });
+    if (type === 'csv') {
+      const csv = Papa.unparse(data);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `members_${t.name}.csv`;
+      a.click();
+    } else {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `members_${t.name}.json`;
+      a.click();
+    }
+  }
+
+  async function downloadLeaderboardAsImage() {
+    const el = document.getElementById('leaderboardContainer');
+    if (!el) return;
+    try {
+      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#0a1f2a' });
+      const link = document.createElement('a');
+      link.download = `leaderboard_${new Date().toISOString().slice(0,19)}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+      showNotification("Image downloaded!", 'success');
+    } catch(e) { showNotification("Error", 'error'); }
+  }
+
+  async function downloadLeaderboardAsPDF() {
+    const el = document.getElementById('leaderboardContainer');
+    if (!el) return;
+    try {
+      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#0a1f2a' });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
+      const imgWidth = 280;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+      pdf.save(`leaderboard_${new Date().toISOString().slice(0,19)}.pdf`);
+      showNotification("PDF downloaded!", 'success');
+    } catch(e) { showNotification("Error", 'error'); }
+  }
+
+  function manualAdd() {
+    if (!adminLogged) return;
+    const name = document.getElementById('adminName').value;
+    const gid = document.getElementById('adminGamingId').value;
+    const details = document.getElementById('adminDetails').value;
+    if (!name || !gid) { showNotification("Name & Gaming ID required", 'error'); return; }
+    const res = addPlayer(name, gid, details, true);
+    showNotification(res.message, res.success ? 'success' : 'error');
+    if (res.success) {
+      document.getElementById('adminName').value = '';
+      document.getElementById('adminGamingId').value = '';
+      document.getElementById('adminDetails').value = '';
+    }
+  }
+
+  function showNotification(msg, type) {
+    const fb = document.getElementById('adminFeedback');
+    fb.innerHTML = `<div class="${type === 'success' ? 'success-msg' : 'error-msg'}">${msg}</div>`;
+    setTimeout(() => fb.innerHTML = '', 3000);
+  }
+
+  // Auth Functions
+  function generateOTP() { return Math.floor(100000 + Math.random() * 900000).toString(); }
+  
+  function generateAndShowOTP() {
+    const name = document.getElementById('playerNameLogin').value.trim();
+    if (!name) { document.getElementById('loginMessage').innerHTML = '<div class="error-msg">Enter name</div>'; return; }
+    currentOTP = generateOTP();
+    otpName = name;
+    document.getElementById('otpDisplayBox').innerHTML = currentOTP;
+    document.getElementById('loginStep1').style.display = 'none';
+    document.getElementById('loginStep2').style.display = 'block';
+    document.getElementById('loginMessage').innerHTML = '<div class="success-msg">? OTP sent</div>';
+    if (window.otpTimer) clearTimeout(window.otpTimer);
+    window.otpTimer = setTimeout(() => { currentOTP = null; document.getElementById('loginMessage').innerHTML = '<div class="error-msg">OTP expired</div>'; }, 120000);
+  }
+
+  function verifyLoginOTP() {
+    if (document.getElementById('otpCode').value === currentOTP) {
+      currentUser = otpName;
+      document.getElementById('loginModal').style.display = 'none';
+      document.getElementById('userDisplayBadge').innerHTML = `? LOGGED IN: ${currentUser}`;
+      document.getElementById('userDisplayBadge').style.background = "#1f7840";
+    } else {
+      document.getElementById('loginMessage').innerHTML = '<div class="error-msg">Invalid OTP</div>';
+    }
+  }
+
+  function resendLoginOTP() {
+    currentOTP = null;
+    document.getElementById('loginStep2').style.display = 'none';
+    document.getElementById('loginStep1').style.display = 'block';
+    document.getElementById('playerNameLogin').value = '';
+    document.getElementById('loginMessage').innerHTML = '';
+  }
+
+  function handleAdminAuth() {
+    if (!adminLogged) {
+      const pwd = prompt("Admin password:");
+      if (pwd === ADMIN_PASSWORD) {
+        adminLogged = true;
+        document.getElementById('adminPanelContent').style.display = 'block';
+        document.getElementById('adminAuthBtn').innerText = '?? LOGOUT ADMIN';
+        document.getElementById('adminAuthBtn').style.background = "#b52e5a";
+        renderTeamsList();
+        updateFormatUI();
+        updateAdminControlsVisibility();
+        renderTournamentCards();
+        showNotification("Admin logged in", 'success');
+      } else alert("Wrong password");
+    } else {
+      adminLogged = false;
+      document.getElementById('adminPanelContent').style.display = 'none';
+      document.getElementById('adminAuthBtn').innerText = '?? ADMIN LOGIN';
+      document.getElementById('adminAuthBtn').style.background = "linear-gradient(95deg, #c03c5c, #a02248)";
+      renderTeamsList();
+      updateAdminControlsVisibility();
+      renderTournamentCards();
+      showNotification("Admin logged out", 'success');
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : m === '>' ? '&gt;' : m);
+  }
+
+  // Event Listeners
+  document.getElementById('registerForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('playerName').value;
+    const gid = document.getElementById('gamingID').value;
+    const details = document.getElementById('playerDetails').value;
+    if (!currentUser) { showNotification("Login required", 'error'); return; }
+    const res = addPlayer(name, gid, details, false);
+    showNotification(res.message, res.success ? 'success' : 'error');
+    if (res.success) {
+      document.getElementById('playerName').value = '';
+      document.getElementById('gamingID').value = '';
+      document.getElementById('playerDetails').value = '';
+    }
+  });
+
+  document.getElementById('adminAuthBtn').addEventListener('click', handleAdminAuth);
+  document.getElementById('publishDateTimeBtn').addEventListener('click', publishDateTime);
+  document.getElementById('publishRoomCredsBtn').addEventListener('click', publishRoomCredentials);
+  document.getElementById('manualAddBtn').addEventListener('click', manualAdd);
+  document.getElementById('downloadCSVBtn').addEventListener('click', () => downloadMembersList('csv'));
+  document.getElementById('downloadJSONBtn').addEventListener('click', () => downloadMembersList('json'));
+  document.getElementById('announcePrizesBtn').addEventListener('click', announcePrizes);
+  document.getElementById('format1v1Btn').addEventListener('click', () => setFormat('1v1'));
+  document.getElementById('format4v4Btn').addEventListener('click', () => setFormat('4v4'));
+  document.getElementById('manageLeaderboardBtn').addEventListener('click', showLeaderboardEditor);
+  document.getElementById('publishLeaderboardBtn').addEventListener('click', publishLeaderboard);
+  document.getElementById('addLeaderboardEntryBtn').addEventListener('click', () => {
+    getCurrentTournament().customLeaderboardData.push({ teamName: 'New Entry', captainName: 'Captain', kills: 0 });
+    showLeaderboardEditor();
+  });
+  document.getElementById('saveLeaderboardEntriesBtn').addEventListener('click', saveLeaderboardEntries);
+  document.getElementById('closeEditorBtn').addEventListener('click', () => document.getElementById('leaderboardEditor').style.display = 'none');
+  document.getElementById('downloadImageBtn').addEventListener('click', downloadLeaderboardAsImage);
+  document.getElementById('downloadPDFBtn').addEventListener('click', downloadLeaderboardAsPDF);
+  document.getElementById('createTournamentAdminBtn').addEventListener('click', () => {
+    const name = prompt("Tournament name:", `Tournament ${Object.keys(tournaments).length + 1}`);
+    if (name) {
+      const format = confirm("1v1 format? (OK=1v1, Cancel=4v4)") ? "1v1" : "4v4";
+      createNewTournament(name, format);
+    }
+  });
+  document.getElementById('deleteTournamentAdminBtn').addEventListener('click', deleteCurrentTournament);
+  document.getElementById('postScoreBtn').addEventListener('click', () => {
+    const team = document.getElementById('scoreTeamSelect').value;
+    const score = document.getElementById('scoreValueInput').value;
+    const details = document.getElementById('scoreDetailsInput').value;
+    if (!score) { showNotification("Enter score/update message", 'error'); return; }
+    postLiveUpdate(team, score, details);
+    document.getElementById('scoreValueInput').value = '';
+    document.getElementById('scoreDetailsInput').value = '';
+  });
+  document.getElementById('clearLiveMessagesBtn').addEventListener('click', clearLiveMessages);
+
+  // Initialize
+  loadFromLocalStorage();
+  if (!currentUser) document.getElementById('loginModal').style.display = 'flex';
+
+  window.deleteTournamentById = deleteTournamentById;
+  window.generateAndShowOTP = generateAndShowOTP;
+  window.verifyLoginOTP = verifyLoginOTP;
+  window.resendLoginOTP = resendLoginOTP;
+</script>
+</body>
+</html>
